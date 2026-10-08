@@ -16,6 +16,18 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Authentication and MongoDB
+
+Set `MONGODB_URI` and `AUTH_SECRET` in `.env.local`. Keep both values server-only and never prefix them with `NEXT_PUBLIC_`.
+
+If registration fails with `querySrv ECONNREFUSED`, add `MONGODB_DNS_SERVERS=1.1.1.1,1.0.0.1` to `.env.local` if your network allows Cloudflare DNS, then restart the dev server. The DNS resolver setting is optional and only affects MongoDB SRV lookups.
+
+The app stores account records in the `users` collection. Passwords are hashed with bcrypt, and sessions use a signed, HTTP-only cookie. The account panel supports username and profile photo updates and logout. MongoDB must be reachable from the development machine or deployment host before registration and sign-in can work.
+
+## Tasks and Storage
+
+Tasks and workspaces are currently stored in browser `localStorage`, namespaced by account ID. They are not yet stored in MongoDB. The existing task record uses `id`, `title`, `dueDate`, `category`, `priority`, `completed`, and `createdAt`.
+
 You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
