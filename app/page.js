@@ -7,7 +7,7 @@ import {
   CircleCheckBig, Clock3, Inbox, Menu, Plus, Search,
   Sparkles, Sun, Sunrise, Trash2, X,
 } from "lucide-react";
-import { readTasks, readWorkspaces, writeTasks, writeWorkspaces } from "../lib/task-store";
+import { deleteWorkspaceTasks, readTasks, readWorkspaces, writeTasks, writeWorkspaces } from "../lib/task-store";
 import { AccountPanel, AuthPanel } from "./auth-panels";
 import BrandLogo from "./brand";
 
@@ -102,6 +102,7 @@ export default function Home() {
   const [workspaces, setWorkspaces] = useState([]);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState("personal");
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
+  const [workspaceToDelete, setWorkspaceToDelete] = useState(null);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [now, setNow] = useState(null);
   const [activeView, setActiveView] = useState("today");
@@ -140,14 +141,15 @@ export default function Home() {
   function activateUser(sessionUser) {
     const currentTime = new Date();
     const loadedWorkspaces = readWorkspaces(sessionUser.id, sessionUser.username);
-    const storedTasks = readTasks("personal", sessionUser.id);
+    const initialWorkspaceId = loadedWorkspaces[0]?.id ?? "personal";
+    const storedTasks = readTasks(initialWorkspaceId, sessionUser.id);
     const initialTasks = storedTasks ?? [];
     writeWorkspaces(loadedWorkspaces, sessionUser.id);
-    if (!storedTasks) writeTasks(initialTasks, "personal", sessionUser.id);
+    if (!storedTasks) writeTasks(initialTasks, initialWorkspaceId, sessionUser.id);
     startTransition(() => {
       setUser(sessionUser);
       setWorkspaces(loadedWorkspaces);
-      setActiveWorkspaceId("personal");
+      setActiveWorkspaceId(initialWorkspaceId);
       setTasks(initialTasks);
       setNow(currentTime);
       setDueDate(dateKey(currentTime));
@@ -247,6 +249,25 @@ export default function Home() {
     selectWorkspace(workspace.id);
   }
 
+  function confirmDeleteWorkspace() {
+    if (!workspaceToDelete || workspaces.length <= 1) return;
+    const deletedId = workspaceToDelete.id;
+    const remainingWorkspaces = workspaces.filter((workspace) => workspace.id !== deletedId);
+    deleteWorkspaceTasks(deletedId, user.id);
+    writeWorkspaces(remainingWorkspaces, user.id);
+    setWorkspaces(remainingWorkspaces);
+
+    if (activeWorkspaceId === deletedId) {
+      const nextWorkspace = remainingWorkspaces[0];
+      setActiveWorkspaceId(nextWorkspace.id);
+      setTasks(readTasks(nextWorkspace.id, user.id) ?? []);
+      setActiveView("today");
+    }
+
+    setWorkspaceToDelete(null);
+    setWorkspaceMenuOpen(false);
+  }
+
   if (authStatus === "loading") {
     return <main className="auth-loading"><BrandLogo markOnly className="auth-loading-mark" /><span>Checking your account...</span></main>;
   }
@@ -264,7 +285,7 @@ export default function Home() {
       <aside className={`sidebar${sidebarOpen ? " sidebar-open" : ""}`}>
         <a className="brand" href="#home" onClick={() => selectView("today")}><BrandLogo /></a>
         <button className="workspace-switcher" type="button" aria-expanded={workspaceMenuOpen} aria-label="Change workspace" onClick={() => setWorkspaceMenuOpen((open) => !open)}><span className="workspace-avatar">{workspaces.find((workspace) => workspace.id === activeWorkspaceId)?.name.slice(0, 1).toUpperCase() ?? "J"}</span><span className="workspace-label"><strong>{workspaces.find((workspace) => workspace.id === activeWorkspaceId)?.name ?? "Jordan’s space"}</strong><small>{workspaces.find((workspace) => workspace.id === activeWorkspaceId)?.description ?? "Personal workspace"}</small></span><ChevronDown size={15} /></button>
-        {workspaceMenuOpen && <div className="workspace-menu"><div className="workspace-menu-label">SWITCH WORKSPACE</div>{workspaces.map((workspace) => <button key={workspace.id} className={`workspace-option${workspace.id === activeWorkspaceId ? " selected" : ""}`} type="button" onClick={() => selectWorkspace(workspace.id)}><span className="workspace-option-avatar">{workspace.name.slice(0, 1).toUpperCase()}</span><span>{workspace.name}</span>{workspace.id === activeWorkspaceId && <Check size={15} />}</button>)}<form className="workspace-create" onSubmit={createWorkspace}><input value={newWorkspaceName} onChange={(event) => setNewWorkspaceName(event.target.value)} placeholder="New workspace" aria-label="New workspace name" maxLength={40} /><button type="submit" aria-label="Create workspace" disabled={!newWorkspaceName.trim()}><Plus size={16} /></button></form></div>}
+        {workspaceMenuOpen && <div className="workspace-menu"><div className="workspace-menu-label">SWITCH WORKSPACE</div>{workspaces.map((workspace) => <div key={workspace.id} className="workspace-option-row"><button className={`workspace-option${workspace.id === activeWorkspaceId ? " selected" : ""}`} type="button" onClick={() => selectWorkspace(workspace.id)}><span className="workspace-option-avatar">{workspace.name.slice(0, 1).toUpperCase()}</span><span>{workspace.name}</span>{workspace.id === activeWorkspaceId && <Check size={15} />}</button>{workspaces.length > 1 && <button className="workspace-delete" type="button" aria-label={`Delete ${workspace.name}`} onClick={() => setWorkspaceToDelete(workspace)}><Trash2 size={14} /></button>}</div>)}<form className="workspace-create" onSubmit={createWorkspace}><input value={newWorkspaceName} onChange={(event) => setNewWorkspaceName(event.target.value)} placeholder="New workspace" aria-label="New workspace name" maxLength={40} /><button type="submit" aria-label="Create workspace" disabled={!newWorkspaceName.trim()}><Plus size={16} /></button></form></div>}
         <div className="sidebar-label">YOUR SPACE</div>
         <nav className="nav-list" aria-label="Task views">
           {views.map(({ id, label, icon: Icon }) => <button key={id} className={`nav-item${activeView === id ? " active" : ""}`} onClick={() => selectView(id)} type="button"><Icon size={17} strokeWidth={1.8} /><span>{label}</span><span className={`nav-count${id === "overdue" && countFor(id) ? " count-alert" : ""}`}>{countFor(id) || ""}</span></button>)}
@@ -316,6 +337,7 @@ export default function Home() {
         </div>
       </section>
       {accountOpen && <AccountPanel user={user} onClose={() => setAccountOpen(false)} onSaved={saveUserProfile} onLogout={logOut} />}
+      {workspaceToDelete && <div className="account-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setWorkspaceToDelete(null); }}><section className="workspace-delete-dialog" role="alertdialog" aria-modal="true" aria-labelledby="workspace-delete-title" aria-describedby="workspace-delete-description"><span className="account-kicker">DELETE WORKSPACE</span><h2 id="workspace-delete-title">Delete {workspaceToDelete.name}?</h2><p id="workspace-delete-description">This permanently deletes the workspace and all tasks saved in it. This can’t be undone.</p><div className="workspace-delete-actions"><button type="button" className="workspace-cancel" onClick={() => setWorkspaceToDelete(null)}>Cancel</button><button type="button" className="workspace-confirm-delete" onClick={confirmDeleteWorkspace}><Trash2 size={15} />Delete workspace</button></div></section></div>}
     </main>
   );
 }
