@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { assertAuthConfiguration, createSession, publicUser } from "../../../../lib/auth";
+import { assertAuthConfiguration, createSession, mobileSessionResponse, publicUser } from "../../../../lib/auth";
 import { getMongoErrorMessage, getUsersCollection } from "../../../../lib/mongodb";
 
 export async function POST(request) {
@@ -18,8 +18,8 @@ export async function POST(request) {
       return Response.json({ error: "Email or password is incorrect." }, { status: 401 });
     }
 
-    await createSession(user._id.toString());
-    return Response.json({ user: publicUser(user) });
+    const token = await createSession(user._id.toString());
+    return Response.json({ user: publicUser(user), ...mobileSessionResponse(request, token) });
   } catch (error) {
     console.error("Account sign-in failed.", error);
     return Response.json({ error: getMongoErrorMessage(error) }, { status: 503 });

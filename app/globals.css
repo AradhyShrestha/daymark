@@ -997,6 +997,33 @@ a:focus-visible {
   background: #fafbf8;
 }
 
+.download-app-button {
+  display: flex;
+  width: calc(100% - 46px);
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin: 0 23px 16px;
+  border: 1px solid #dce5dc;
+  border-radius: 4px;
+  background: #f6f8f4;
+  color: #48654e;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.download-app-button:disabled {
+  cursor: not-allowed;
+  opacity: .78;
+}
+
+.download-app-button span {
+  color: #89958b;
+  font-size: 9px;
+  font-weight: 450;
+}
+
 .account-logout > div {
   display: grid;
   gap: 4px;

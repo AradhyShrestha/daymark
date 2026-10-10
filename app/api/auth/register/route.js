@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { assertAuthConfiguration, createSession, publicUser } from "../../../../lib/auth";
+import { assertAuthConfiguration, createSession, mobileSessionResponse, publicUser } from "../../../../lib/auth";
 import { getMongoErrorMessage, getUsersCollection } from "../../../../lib/mongodb";
 
 export async function POST(request) {
@@ -31,8 +31,8 @@ export async function POST(request) {
     };
     const result = await users.insertOne(user);
     user._id = result.insertedId;
-    await createSession(user._id.toString());
-    return Response.json({ user: publicUser(user) }, { status: 201 });
+    const token = await createSession(user._id.toString());
+    return Response.json({ user: publicUser(user), ...mobileSessionResponse(request, token) }, { status: 201 });
   } catch (error) {
     if (error?.code === 11000) {
       return Response.json({ error: "An account with this email already exists." }, { status: 409 });

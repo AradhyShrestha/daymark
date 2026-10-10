@@ -4,9 +4,9 @@ import { getMongoErrorMessage, getUsersCollection } from "../../../../lib/mongod
 const usernamePattern = /^[\p{L}\p{N} ._'’-]+$/u;
 const avatarPattern = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/]+={0,2})$/;
 
-export async function GET() {
+export async function GET(request) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     return Response.json({ user: user ? publicUser(user) : null });
   } catch (error) {
     console.error("Account session lookup failed.", error);
@@ -16,7 +16,7 @@ export async function GET() {
 
 export async function PATCH(request) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     if (!user) return Response.json({ error: "Sign in to update your account." }, { status: 401 });
 
     const body = await request.json();

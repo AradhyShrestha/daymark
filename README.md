@@ -22,11 +22,11 @@ Set `MONGODB_URI` and `AUTH_SECRET` in `.env.local`. Keep both values server-onl
 
 If registration fails with `querySrv ECONNREFUSED`, add `MONGODB_DNS_SERVERS=1.1.1.1,1.0.0.1` to `.env.local` if your network allows Cloudflare DNS, then restart the dev server. The DNS resolver setting is optional and only affects MongoDB SRV lookups.
 
-The app stores account records in the `users` collection. Passwords are hashed with bcrypt, and sessions use a signed, HTTP-only cookie. The account panel supports username and profile photo updates and logout. MongoDB must be reachable from the development machine or deployment host before registration and sign-in can work.
+The app stores account records in the `users` collection. Passwords are hashed with bcrypt, and website sessions use a signed, HTTP-only cookie. The Android app uses the same registration and sign-in endpoints and stores its signed session token in Android secure storage; authenticated mobile requests use a bearer token. MongoDB must be reachable from the development machine or deployment host before registration and sign-in can work.
 
 ## Tasks and Storage
 
-Tasks and workspaces are currently stored in browser `localStorage`, namespaced by account ID. They are not yet stored in MongoDB. The existing task record uses `id`, `title`, `dueDate`, `category`, `priority`, `completed`, and `createdAt`.
+Tasks and workspaces are currently stored in browser `localStorage`, namespaced by account ID, on the website and in device storage on Android. They are not yet stored in MongoDB or synchronized between devices. The existing task record uses `id`, `title`, `dueDate`, `category`, `priority`, `completed`, and `createdAt`.
 
 You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
 

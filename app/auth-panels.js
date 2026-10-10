@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ArrowRight, Check, Eye, EyeOff, ImagePlus, LoaderCircle, LockKeyhole, LogOut, Mail, UserRound, X } from "lucide-react";
+import { ArrowRight, Check, Download, Eye, EyeOff, ImagePlus, LoaderCircle, LockKeyhole, LogOut, Mail, UserRound, X } from "lucide-react";
 import BrandLogo from "./brand";
 
 async function readResponse(response) {
@@ -132,6 +132,9 @@ export function AccountPanel({ user, onClose, onSaved, onLogout }) {
           {notice && <div className="account-notice" role="status">{notice}</div>}
           <button className="account-save" type="submit" disabled={pending || username.trim().length < 2}>{pending ? "Saving..." : "Save changes"}</button>
         </form>
+        <button className="download-app-button" type="button" disabled>
+          <Download size={15} /> Download our app <span>Coming soon</span>
+        </button>
         <div className="account-logout"><div><strong>Leaving already?</strong><small>You can sign back in any time.</small></div><button type="button" onClick={onLogout}><LogOut size={15} />Log out</button></div>
       </section>
     </div>
